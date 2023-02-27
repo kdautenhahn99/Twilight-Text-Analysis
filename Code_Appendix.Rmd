@@ -1,0 +1,252 @@
+---
+title: "Code Appendix"
+author: "Karissa Dautenhahn"
+date: "2022-12-12"
+output:
+  pdf_document: 
+    keep_tex: yes
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  tidy.opts=list(width.cutoff=70), 
+  tidy=TRUE
+)
+```
+
+```{r warning = FALSE, message = FALSE}
+library(kableExtra)
+library(readtext)
+library(cmu.textstat)
+library(tidyverse)
+library(quanteda)
+library(quanteda.textstats)
+library(syuzhet)
+library(ggplot2)
+```
+
+```{r}
+# Twilight Series files
+files_list <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight", all.files = T, full.names = T, pattern = "*.txt") 
+
+# Midnight Sun book
+files_list_ms <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/MidnightSun", all.files = T, full.names = T, pattern = "*.txt")
+
+# All Edward text
+files_list_ed <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Edward", all.files = T, full.names = T, pattern = "*.txt") 
+
+# All Bella text
+files_list_bella <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Bella", all.files = T, full.names = T, pattern = "*.txt") 
+
+
+# Creating corpus object for Twilight Saga
+sp <- files_list %>%
+  readtext::readtext()
+sp <-   sp %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() 
+
+# Creating a corpus object for Midnight Sun
+sp_ms <- files_list_ms %>%
+  readtext::readtext()
+sp_ms <-   sp_ms %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() 
+
+# Corpus object for Edward 
+sp_ed <- files_list_ed %>%
+  readtext::readtext()
+sp_ed <-   sp_ed %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() 
+
+# Corpus object for Bella 
+sp_bella <- files_list_bella %>%
+  readtext::readtext()
+sp_bella <-   sp_bella %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() 
+```
+
+# Summary of Data
+
+Below are token counts for each of the four corpora.
+
+```{r}
+kbl(list(summary(sp)[c(1,3)], summary(sp_bella)[c(1,3)]), caption = "Summary of Twilight Series and Bella Corpora") %>% kable_classic() %>% add_header_above(c("Twilight Series Corpus" = 1, "Bella Corpus" = 1), align = "l")
+kbl(list(summary(sp_ms)[c(1,3)], summary(sp_ed)[c(1,3)]), caption = "Summary of Midnight Sun and Edward Corpora") %>% kable_classic() %>% add_header_above(c("Midnight Sun Corpus" = 1, "Edward Corpus" = 1), align = "l")
+```
+
+This section contains the code to tokenize the corpus objects and create a document feature matrix for each.
+
+```{r}
+# Tokenizing all 4 corpora
+sp <- sp %>%  tokens(what="fastestword", remove_numbers=TRUE)
+sp_ms <- sp_ms %>%  tokens(what="fastestword", remove_numbers=TRUE)
+# Using word separation to eliminate punctuation issues on Edward's corpus
+sp_ed <- sp_ed %>%  tokens(what="word", remove_numbers=TRUE, remove_punct = TRUE, remove_symbols = TRUE)
+sp_bella <- sp_bella %>%  tokens(what="fastestword", remove_numbers=TRUE, remove_punct = TRUE)
+
+# Document Feature Matrices for all corpora
+dfm_twilight <- dfm(sp)
+dfm_ms <- dfm(sp_ms)
+dfm_ed <- dfm(sp_ed)
+dfm_bella <- dfm(sp_bella)
+```
+
+This chart is not included in the paper discussion, but showcases the top 10 most frequent words in the Twilight Series as well as Midnight Sun. One interesting note is that "her" is the 4th most frequent word in Midnight Sun while "he" is the 6th most frequent word in the Twilight Series.
+
+```{r}
+freq_df <- textstat_frequency(dfm_twilight) %>%
+  data.frame(stringsAsFactors = F)
+knitr::kable(head(freq_df[1:3], 10), caption = "Most frequent words in the Twilight Saga")
+
+freq_df_ms <- textstat_frequency(dfm_ms) %>%
+  data.frame(stringsAsFactors = F)
+knitr::kable(head(freq_df_ms[1:3], 10), caption = "Most frequent words in Midnight Sun")
+```
+
+
+# Keyness comparison
+
+This code chunk creates a keyness table from the Edward and Bella dfm objects. The columns for Deviation of Proportions (DP) for both the target and reference corpora are ignored since they are not used in the study. The PV column shows highly significant p-values for all of the top 5 tokens. The top two results are discussed in the paper, but the top 5 are shown here. The remaining 3 tokens have high LL values likely due to tokenizing differences between the two corpora and should not be regarded as significantly.
+
+```{r}
+# Target DFM is Edward, reference is Bella
+char_kw <- keyness_table(dfm_ed, dfm_bella)
+
+kableExtra::kbl(head(char_kw[-c(9, 10)], n = 5), caption = "Tokens with the highest keyness values in Edward's text when compared to Bella's text", booktabs = T, linesep = "", digits = 2) %>%
+  kableExtra::kable_styling(latex_options = "HOLD_position") %>%
+  kableExtra::kable_classic()
+```
+
+# Collocates by Mutual Information (MI)
+
+The 6 collocates of "him" (from Bella's corpus) and "her" (from Edward's corpus) are shown here using an Absolute Frequency (AF) of 16 and MI score of 3. A default of 5 words to the left and 5 to the right of the node word is used.
+
+```{r}
+b <- collocates_by_MI(sp_ed, "her", left = 3, right = 0)
+b <- b %>% filter(col_freq >= 16 & MI_1 >= 3)
+
+g  <- collocates_by_MI(sp_bella, "him", left = 3, right = 0)
+g <- g %>% filter(col_freq >= 16 & MI_1 >= 3)
+
+knitr::kable(head(b), digits = 3, caption = "Top Collocates of 'her' from Edward's corpus")
+knitr::kable(head(g), digits = 3, caption = "Top Collocates of 'him' from Bella's corpus")
+```
+
+# Graph of Collocates of "Him" and "Her"
+
+A graph of collocates is created using the same parameters as before (AF >= 16, MI >= 3).
+
+```{r,  message = FALSE, fig.width = 7, fig.height=4}
+library(ggraph)
+net <- col_network(b, g)
+
+ggraph(net, weight = link_weight, layout = "stress") + 
+  geom_edge_link(color = "gray80", alpha = .75) + 
+  geom_node_point(aes(alpha = node_weight, size = 3, color = n_intersects)) +
+  geom_node_text(aes(label = label), repel = T, size = 3) +
+  scale_alpha(range = c(0.2, 0.9)) +
+  theme_graph() +
+  theme(legend.position="none")
+```
+
+
+# Sentiment Analysis
+
+This section involves using the syuzhet package (from library(syuzhet)) to analyze the sentiment of each novel.
+
+```{r warning = FALSE, message = FALSE}
+midnight_sun_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/MidnightSun/MidnightSun.txt" %>% 
+  readtext()
+mb_mid_sun <- str_squish(midnight_sun_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences <- get_sentences(mb_mid_sun)
+nrc_data_mid_sun <- get_nrc_sentiment(mb_sentences)
+
+
+twilight_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_Twilight.txt" %>%
+  readtext() 
+mb_twilight <- str_squish(twilight_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences_t <- get_sentences(mb_twilight)
+nrc_data_twilight <- get_nrc_sentiment(mb_sentences_t)
+
+
+new_moon_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_NewMoon.txt" %>%
+  readtext() 
+mb_new_moon <- str_squish(new_moon_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences_nm <- get_sentences(mb_new_moon)
+nrc_data_new_moon <- get_nrc_sentiment(mb_sentences_nm)
+
+
+eclipse_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_Eclipse.txt" %>%
+  readtext() 
+mb_eclipse <- str_squish(eclipse_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences_ec <- get_sentences(mb_eclipse)
+nrc_data_eclipse <- get_nrc_sentiment(mb_sentences_ec)
+
+
+breaking_dawn_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_BreakingDawn.txt" %>%
+  readtext() 
+mb_breaking_dawn <- str_squish(breaking_dawn_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences_bd <- get_sentences(mb_breaking_dawn)
+nrc_data_breaking_dawn <- get_nrc_sentiment(mb_sentences_bd)
+
+
+# Gathering proportions of emotions in books
+midnight_sun_emotions <- colSums(prop.table(nrc_data_mid_sun[, 1:8]))
+twilight_emotions <- colSums(prop.table(nrc_data_twilight[, 1:8]))
+new_moon_emotions <- colSums(prop.table(nrc_data_new_moon[, 1:8]))
+eclipse_emotions <- colSums(prop.table(nrc_data_eclipse[, 1:8]))
+breaking_dawn_emotions <- colSums(prop.table(nrc_data_breaking_dawn[, 1:8]))
+
+twilight_feeling_table <- rbind(twilight_emotions, new_moon_emotions, eclipse_emotions, breaking_dawn_emotions, midnight_sun_emotions)
+
+# Vector of book names
+books <- c("Twilight", "New Moon", "Eclipse", "Breaking Dawn", "Midnight Sun")
+
+twilight_feeling_table <- cbind(books, data.frame(twilight_feeling_table, row.names=NULL))
+
+# Creating the plot
+emotion_plot <- twilight_feeling_table %>%
+  pivot_longer(-c(books)) %>%
+ggplot(aes(x = books, y = value, color = name)) +
+geom_point(pch = 20) +
+geom_smooth(method = "gam", se = F) +
+geom_line(aes(group = name)) +
+  scale_x_discrete(limits = books) + 
+ylab("Proportion of Sentences with Given Emotion") +
+xlab("Books") +
+  labs(color = "Emotions") +
+ggtitle("Emotions Represented throughout the Twilight Series and Midnight Sun") +
+theme(plot.title = element_text(size = 12), axis.text.x = element_text(angle = 45, hjust = 1))
+emotion_plot
+```
+
+
+Graph comparing just the first Twilight novel and Midnight Sun:
+
+```{r warning = FALSE, message = FALSE}
+emotion_plot <- twilight_feeling_table %>%
+  filter(books %in% c("Twilight", "Midnight Sun")) %>%
+  pivot_longer(-c(books)) %>%
+ggplot(aes(x = books, y = value, color = name)) +
+geom_point(pch = 20) +
+geom_smooth(method = "gam", se = F) +
+geom_line(aes(group = name)) +
+  scale_x_discrete(limits = c("Twilight", "Midnight Sun")) + 
+ylab("Proportion of Sentences with Given Emotion") +
+xlab("Books") +
+  labs(color = "Emotions") +
+ggtitle("Emotions in Twilight and Midnight Sun") +
+theme(plot.title = element_text(size = 12), axis.text.x = element_text(angle = 45, hjust = 1))
+emotion_plot
+```

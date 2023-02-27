@@ -1,0 +1,714 @@
+---
+title: 'CBE #2'
+author: "Karissa Dautenhahn"
+date: "2022-11-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  tidy.opts=list(width.cutoff=70), # this last bit auto-wraps code and comments so the don't run off the page, but you need to have formatR installed
+  tidy=TRUE
+)
+```
+
+```{r}
+library(cmu.textstat)
+library(tidyverse)
+library(quanteda)
+library(quanteda.textstats)
+
+```
+
+This is an extra chapter from New Moon from Stephanie Meyer's website that's written from Edward's perspective.
+https://stepheniemeyer.com/wp-content/uploads/2016/02/nm_extras_rosalie.pdf
+
+Twilight books are on the YA corpus file from the data section. 
+Eclipse Epilogue is written from Jacob's perspective along with Part II (out of parts 1-3) from Breaking Dawn.
+
+The new book Midnight Sun had the first 12 chapters leaked.
+
+This is an extra excerpt from Jacob's perspective also from Stephanie Meyer's website
+https://stepheniemeyer.com/wp-content/uploads/2016/02/nm_extras_jacob.pdf
+
+HERE's THE FULL MIDNIGHT SUN IN TXT FORMAT:
+https://archive.org/stream/midnight-sun-stephenie-meyer_202109/Midnight_Sun_-_Stephenie_Meyer_djvu.txt
+
+https://archive.org/details/midnight-sun-stephenie-meyer_202109/page/n9/mode/2up (and the website it is from)
+
+To create a vector of the file paths: 
+
+```{r}
+files_list <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight", all.files = T, full.names = T, pattern = "*.txt") 
+files_list_ed <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Edward", all.files = T, full.names = T, pattern = "*.txt") 
+files_list_jb <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Jacob", all.files = T, full.names = T, pattern = "*.txt")
+files_list_ms <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/MidnightSun", all.files = T, full.names = T, pattern = "*.txt")
+```
+
+```{r}
+#Reading files
+
+sp <- files_list %>%
+  readtext::readtext()
+
+sp <-   sp %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE)
+
+sp_ed <- files_list_ed %>%
+  readtext::readtext()
+
+sp_ed <-   sp_ed %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE)
+
+sp_jb <- files_list_jb %>%
+  readtext::readtext()
+
+sp_jb <-   sp_jb %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE)
+
+
+sp_ms <- files_list_ms %>%
+  readtext::readtext()
+
+sp_ms <-   sp_ms %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE)
+```
+
+```{r}
+knitr::kable(summary(sp), caption = "Summary of Twilight series corpus.")
+knitr::kable(summary(sp_ed), caption = "Summary of Edward corpus.")
+knitr::kable(summary(sp_jb), caption = "Summary of Jacob corpus.")
+knitr::kable(summary(sp_ms), caption = "Summary of Midnight Sun corpus.")
+```
+
+```{r}
+#Change to sp_ms or sp_jb for looking at collocates in other sources
+
+#Collocates of human and vampire
+b <- collocates_by_MI(sp_ms, "human", left = 3, right = 0)
+b <- b %>% filter(col_freq >= 3 & MI_1 >= 3)
+
+g  <- collocates_by_MI(sp, "human", left = 3, right = 0)
+g <- g %>% filter(col_freq >= 3 & MI_1 >= 3)
+```
+
+```{r,  message = FALSE, fig.width = 7, fig.height=4}
+library(ggraph)
+net <- col_network(b, g)
+
+ggraph(net, weight = link_weight, layout = "stress") + 
+  geom_edge_link(color = "gray80", alpha = .75) + 
+  geom_node_point(aes(alpha = node_weight, size = 3, color = n_intersects)) +
+  geom_node_text(aes(label = label), repel = T, size = 3) +
+  scale_alpha(range = c(0.2, 0.9)) +
+  theme_graph() +
+  theme(legend.position="none")
+```
+
+```{r}
+#From Jacob's perspective... not wanting to harm her is the vibe
+# (Run this code then run graph chunk above to create graph)
+b <- collocates_by_MI(sp_jb, "her", left = 3, right = 0)
+b <- b %>% filter(col_freq >= 3 & MI_1 >= 3)
+
+g  <- collocates_by_MI(sp_jb, "bella", left = 3, right = 0)
+g <- g %>% filter(col_freq >= 3 & MI_1 >= 3)
+```
+
+```{r,  message = FALSE, fig.width = 7, fig.height=4}
+net <- col_network(b, g)
+
+ggraph(net, weight = link_weight, layout = "stress") + 
+  geom_edge_link(color = "gray80", alpha = .75) + 
+  geom_node_point(aes(alpha = node_weight, size = 3, color = n_intersects)) +
+  geom_node_text(aes(label = label), repel = T, size = 3) +
+  scale_alpha(range = c(0.2, 0.9)) +
+  theme_graph() +
+  theme(legend.position="none")
+```
+
+```{r}
+totc_tkns <- tokens(sp, what = "word", remove_punct = TRUE)
+totc_dfm <- dfm(totc_tkns)
+knitr::kable(convert(totc_dfm, to = "data.frame")[,1:12], caption = "Part of a document-feature matrix.", "simple")
+```
+
+```{r}
+totc_tkns_ed <- tokens(sp_ed, what = "word", remove_punct = TRUE)
+totc_dfm_ed <- dfm(totc_tkns_ed)
+knitr::kable(convert(totc_dfm_ed, to = "data.frame")[,1:12], caption = "Part of a document-feature matrix.", "simple")
+```
+
+```{r}
+totc_tkns_jb <- tokens(sp_jb, what = "word", remove_punct = TRUE)
+totc_dfm_jb <- dfm(totc_tkns_jb)
+knitr::kable(convert(totc_dfm_jb, to = "data.frame")[,1:12], caption = "Part of a document-feature matrix.", "simple")
+```
+
+```{r}
+totc_tkns_ms <- tokens(sp_ms, what = "word", remove_punct = TRUE)
+totc_dfm_ms <- dfm(totc_tkns_ms)
+knitr::kable(convert(totc_dfm_ms, to = "data.frame")[,1:12], caption = "Part of a document-feature matrix.", "simple")
+```
+
+```{r}
+knitr::kable(textstat_frequency(totc_dfm), caption = "Token counts of sample sentence.", "simple")
+knitr::kable(textstat_frequency(totc_dfm_ed), caption = "Token counts of sample Edward sentence.", "simple")
+knitr::kable(textstat_frequency(totc_dfm_jb), caption = "Token counts of sample Jacob sentence.", "simple")
+knitr::kable(textstat_frequency(totc_dfm_ms), caption = "Token counts of sample Midnight Sun sentence.", "simple")
+```
+
+```{r}
+#SENTIMENT ANALYSIS ATTEMPT
+library(syuzhet)
+sp_ed2 <- files_list_ed %>%
+  readtext::readtext()
+
+mb <- str_squish(sp_ed2$text[1])
+
+# chunk the novel into sentences
+mb_sentences <- get_sentences(mb)
+
+# calculate and return sentiment scores
+mb_sentiment <- get_sentiment(mb_sentences)
+
+#knitr::kable(mb_sentiment[1:6], caption = "Sample sentiment scores.", col.names = "")
+mb_dct <- get_dct_transform(mb_sentiment, low_pass_size = 5, x_reverse_len = 100, scale_vals = FALSE, scale_range = TRUE)
+
+mb_dct <- data.frame(dct = mb_dct) %>%
+  rownames_to_column("time") %>%
+  mutate(time = as.numeric(time))
+
+knitr::kable(head(mb_dct), caption = "Sample transformed scores.")
+
+plot(mb_dct, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Emotional Sentiment of Edward Excerpt")
+plot(mb_sentiment, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Emotional Sentiment of Edward Excerpt")
+
+```
+
+```{r}
+sp_jb2 <- files_list_jb %>%
+  readtext::readtext()
+
+mb <- str_squish(sp_jb2$text[1])
+
+# chunk the novel into sentences
+mb_sentences <- get_sentences(mb)
+
+# calculate and return sentiment scores
+mb_sentiment <- get_sentiment(mb_sentences)
+
+#knitr::kable(mb_sentiment[1:6], caption = "Sample sentiment scores.", col.names = "")
+mb_dct <- get_dct_transform(mb_sentiment, low_pass_size = 5, x_reverse_len = 100, scale_vals = FALSE, scale_range = TRUE)
+
+mb_dct <- data.frame(dct = mb_dct) %>%
+  rownames_to_column("time") %>%
+  mutate(time = as.numeric(time))
+
+knitr::kable(head(mb_dct), caption = "Sample transformed scores.")
+
+plot(mb_dct, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Emotional Sentiment of Jacob Excerpt")
+plot(mb_sentiment, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Emotional Sentiment of Jacob Excerpt")
+
+```
+
+
+```{r}
+library(syuzhet)
+sp_2 <- files_list %>%
+  readtext::readtext()
+
+mb <- str_squish(sp_2$text[1])
+
+# chunk the novel into sentences
+mb_sentences <- get_sentences(mb)
+
+# calculate and return sentiment scores
+mb_sentiment <- get_sentiment(mb_sentences)
+
+#knitr::kable(mb_sentiment[1:6], caption = "Sample sentiment scores.", col.names = "")
+mb_dct <- get_dct_transform(mb_sentiment, low_pass_size = 5, x_reverse_len = 100, scale_vals = FALSE, scale_range = TRUE)
+
+mb_dct <- data.frame(dct = mb_dct) %>%
+  rownames_to_column("time") %>%
+  mutate(time = as.numeric(time))
+
+knitr::kable(head(mb_dct), caption = "Sample transformed scores.")
+
+plot(mb_dct, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Emotional Sentiment of Twilight Series")
+plot(mb_sentiment, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Emotional Sentiment of Twilight Series")
+
+percent_vals <- get_percentage_values(mb_sentiment, bins = 10)
+plot(percent_vals, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Twilight using Percentage Based Means")
+```
+
+```{r}
+library(syuzhet)
+sp_ms2 <- files_list_ms %>%
+  readtext::readtext()
+
+mb <- str_squish(sp_ms2$text[1])
+
+# chunk the novel into sentences
+mb_sentences <- get_sentences(mb)
+
+# calculate and return sentiment scores
+mb_sentiment <- get_sentiment(mb_sentences)
+
+#knitr::kable(mb_sentiment[1:6], caption = "Sample sentiment scores.", col.names = "")
+mb_dct <- get_dct_transform(mb_sentiment, low_pass_size = 5, x_reverse_len = 100, scale_vals = FALSE, scale_range = TRUE)
+
+mb_dct <- data.frame(dct = mb_dct) %>%
+  rownames_to_column("time") %>%
+  mutate(time = as.numeric(time))
+
+knitr::kable(head(mb_dct), caption = "Sample transformed scores.")
+
+plot(mb_dct, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Emotional Sentiment of Midnight Sun")
+plot(mb_sentiment, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Emotional Sentiment of Midnight Sun")
+
+percent_vals <- get_percentage_values(mb_sentiment, bins = 10)
+plot(percent_vals, type ="l", xlab = "Narrative Time", ylab = "Emotional Valence", col = "red", main = "Midnight Sun using Percentage Based Means")
+```
+
+```{r}
+#NRC sentiment analysis for plotting specific emotions on a bar graph
+#Midnight Sun
+sp_ms2 <- files_list_ms %>%
+  readtext::readtext()
+
+mb <- str_squish(sp_ms2$text[1])
+
+# chunk the novel into sentences
+mb_sentences <- get_sentences(mb)
+nrc_data <- get_nrc_sentiment(mb_sentences)
+
+# This shows the sentences containing anger, then joy
+#angry_items <- which(nrc_data$anger > 0)
+#mb_sentences[angry_items]
+#joy_items <- which(nrc_data$joy > 0)
+#mb_sentences[joy_items]
+
+#A direct count or proportion of anger to total sentences might be useful for next project part
+anger_count <- sum(which(nrc_data$anger > 0))
+
+pander::pandoc.table(nrc_data_mid_sun[, 1:8], split.table = Inf)
+barplot(
+  sort(colSums(prop.table(nrc_data[, 1:8]))), 
+  horiz = TRUE, 
+  cex.names = 0.7, 
+  las = 1, 
+  main = "Emotions in Midnight Sun sample text", xlab="Percentage"
+  )
+```
+
+```{r}
+#Create a dfm for EACH of the twilight series books and then midnight sun at the end
+# files_list_ms <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/MidnightSun/MidnightSun.txt", all.files = T, full.names = T, pattern = "*.txt")
+library(tidyverse)
+library(quanteda)
+library(readtext)
+library(R.utils)
+library(cmu.textstat)
+library(quanteda.textstats)
+library(dplyr)
+
+midnight_sun_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/MidnightSun/MidnightSun.txt" %>% 
+  readtext() %>%
+  corpus() %>%
+  tokens(remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE,
+         what = "word") %>%
+  tokens_tolower() %>%
+  tokens_compound(pattern = phrase(multiword_expressions))
+
+twilight_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_Twilight.txt" %>%
+  readtext() %>%
+  corpus() %>%
+  tokens(remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE,
+         what = "word") %>%
+  tokens_tolower() %>%
+  tokens_compound(pattern = phrase(multiword_expressions))
+
+new_moon_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_NewMoon.txt" %>%
+  readtext() %>%
+  corpus() %>%
+  tokens(remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE,
+         what = "word") %>%
+  tokens_tolower() %>%
+  tokens_compound(pattern = phrase(multiword_expressions))
+
+eclipse_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_Eclipse.txt" %>%
+  readtext() %>%
+  corpus() %>%
+  tokens(remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE,
+         what = "word") %>%
+  tokens_tolower() %>%
+  tokens_compound(pattern = phrase(multiword_expressions))
+
+breaking_dawn_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_BreakingDawn.txt" %>%
+  readtext() %>%
+  corpus() %>%
+  tokens(remove_punct = TRUE,
+         remove_numbers = TRUE,
+         remove_symbols = TRUE,
+         what = "word") %>%
+  tokens_tolower() %>%
+  tokens_compound(pattern = phrase(multiword_expressions))
+
+twilight_dfm <- dfm(twilight_tokens)
+new_moon_dfm <- dfm(new_moon_tokens)
+eclipse_dfm <- dfm(eclipse_tokens)
+breaking_dawn_dfm <- dfm(breaking_dawn_tokens)
+midnight_sun_dfm <- dfm(midnight_sun_tokens)
+
+twilight_MI <- collocates_by_MI(twilight_tokens, "bella") %>%
+  filter(token %in% c("edward", "jacob", "charlie", "alice",
+                      "carlisle", "rosalie")) %>%
+  dplyr::select(token, MI_1) %>%
+  rename(Character = token, Score = MI_1) %>%
+  mutate(Book = "Twilight")
+
+new_moon_MI <- collocates_by_MI(new_moon_tokens, "bella") %>%
+  filter(token %in% c("edward", "jacob", "charlie", "alice",
+                      "carlisle", "rosalie")) %>%
+  dplyr::select(token, MI_1) %>%
+  rename(Character = token, Score = MI_1) %>%
+  mutate(Book = "New Moon")
+
+eclipse_MI <- collocates_by_MI(eclipse_tokens, "bella") %>%
+  filter(token %in% c("edward", "jacob", "charlie", "alice",
+                      "carlisle", "rosalie")) %>%
+  dplyr::select(token, MI_1) %>%
+  rename(Character = token, Score = MI_1) %>%
+  mutate(Book = "Eclipse")
+
+breaking_dawn_MI <- collocates_by_MI(breaking_dawn_tokens, "bella") %>%
+  filter(token %in% c("edward", "jacob", "charlie", "alice",
+                      "carlisle", "rosalie")) %>%
+  dplyr::select(token, MI_1) %>%
+  rename(Character = token, Score = MI_1) %>%
+  mutate(Book = "Breaking Dawn")
+
+midnight_sun_MI <-
+  collocates_by_MI(midnight_sun_tokens, "bella") %>%
+  filter(token %in% c("edward", "jacob", "charlie", "alice",
+                      "carlisle", "rosalie")) %>%
+  dplyr::select(token, MI_1) %>%
+  rename(Character = token, Score = MI_1) %>%
+  mutate(Book = "Midnight Sun")
+
+twilight_MI <- rbind(twilight_MI, new_moon_MI, eclipse_MI, breaking_dawn_MI, midnight_sun_MI)
+
+books <- c("Twilight", "New Moon", "Eclipse", "Breaking Dawn",
+"Midnight Sun")
+
+twilight_MI$Character <- capitalize(twilight_MI$Character)
+
+bella_relationship <- twilight_MI %>%
+ggplot(aes(x = factor(Book, level = books), y = Score, color = Character)) +
+geom_point(pch = 20) +
+geom_smooth(method = "gam", se = F) +
+geom_line(aes(group = Character)) +
+ylab("Relationship Score with Bella Swan") +
+xlab("") +
+ggtitle("Strength of relationships of different characters with Bella Swan across all books + Midnight Sun") +
+theme(plot.title = element_text(size = 12), axis.text.x = element_text(angle = 45, hjust = 1))
+bella_relationship
+```
+
+```{r}
+library(syuzhet)
+
+midnight_sun_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/MidnightSun/MidnightSun.txt" %>% 
+  readtext()
+mb_mid_sun <- str_squish(midnight_sun_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences <- get_sentences(mb_mid_sun)
+nrc_data_mid_sun <- get_nrc_sentiment(mb_sentences)
+
+
+twilight_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_Twilight.txt" %>%
+  readtext() 
+mb_twilight <- str_squish(twilight_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences_t <- get_sentences(mb_twilight)
+nrc_data_twilight <- get_nrc_sentiment(mb_sentences_t)
+
+
+new_moon_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_NewMoon.txt" %>%
+  readtext() 
+mb_new_moon <- str_squish(new_moon_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences_nm <- get_sentences(mb_new_moon)
+nrc_data_new_moon <- get_nrc_sentiment(mb_sentences_nm)
+
+
+eclipse_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_Eclipse.txt" %>%
+  readtext() 
+mb_eclipse <- str_squish(eclipse_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences_ec <- get_sentences(mb_eclipse)
+nrc_data_eclipse <- get_nrc_sentiment(mb_sentences_ec)
+
+
+breaking_dawn_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_BreakingDawn.txt" %>%
+  readtext() 
+mb_breaking_dawn <- str_squish(breaking_dawn_tokens$text[1])
+# chunk the novel into sentences
+mb_sentences_bd <- get_sentences(mb_breaking_dawn)
+nrc_data_breaking_dawn <- get_nrc_sentiment(mb_sentences_bd)
+
+
+midnight_sun_emotions <- colSums(prop.table(nrc_data_mid_sun[, 1:8]))
+twilight_emotions <- colSums(prop.table(nrc_data_twilight[, 1:8]))
+new_moon_emotions <- colSums(prop.table(nrc_data_new_moon[, 1:8]))
+eclipse_emotions <- colSums(prop.table(nrc_data_eclipse[, 1:8]))
+breaking_dawn_emotions <- colSums(prop.table(nrc_data_breaking_dawn[, 1:8]))
+
+twilight_feeling_table <- rbind(twilight_emotions, new_moon_emotions, eclipse_emotions, breaking_dawn_emotions, midnight_sun_emotions)
+
+books <- c("Twilight", "New Moon", "Eclipse", "Breaking Dawn", "Midnight Sun")
+# didn't end up using: emotions <- c("anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust")
+
+twilight_feeling_table <- cbind(books, data.frame(twilight_feeling_table, row.names=NULL))
+
+
+
+emotion_plot <- twilight_feeling_table %>%
+  pivot_longer(-c(books)) %>%
+ggplot(aes(x = books, y = value, color = name)) +
+geom_point(pch = 20) +
+geom_smooth(method = "gam", se = F) +
+geom_line(aes(group = name)) +
+  scale_x_discrete(limits = books) + 
+ylab("Percent of Sentences with Given Emotion") +
+xlab("Books") +
+  labs(color = "Emotions") +
+ggtitle("Emotions Represented throughout the Twilight Series and Midnight Sun") +
+theme(plot.title = element_text(size = 12), axis.text.x = element_text(angle = 45, hjust = 1))
+emotion_plot
+
+```
+
+From this graph of the emotions, we see that there is not a large difference between the emotions used in Midnight Sun compared to the rest of the series. This could mean that although Stephanie Meyer is writing from a different perspective in Midnight Sun, there is not a large variety in the emotions that the sentences of the books contain as a whole. For example, similar levels of disgust are shown throughout every book. 
+
+```{r}
+emotion_plot <- twilight_feeling_table %>%
+  filter(books %in% c("Twilight", "Midnight Sun")) %>%
+  pivot_longer(-c(books)) %>%
+ggplot(aes(x = books, y = value, color = name)) +
+geom_point(pch = 20) +
+geom_smooth(method = "gam", se = F) +
+geom_line(aes(group = name)) +
+  scale_x_discrete(limits = c("Twilight", "Midnight Sun")) + 
+ylab("Percent of Sentences with Given Emotion") +
+xlab("Books") +
+  labs(color = "Emotions") +
+ggtitle("Emotions in Twilight and Midnight Sun") +
+theme(plot.title = element_text(size = 12), axis.text.x = element_text(angle = 45, hjust = 1))
+emotion_plot
+```
+
+Directly comparing Twilight with Midnight Sun since the events are the same and the difference is in the perspective of the narrative, we can see slight differences. The dominant emotion in Twilight is trust but the leading emotion in Midnight Sun is anticipation. The sentences in Midnight Sun also show more anger than in Twilight, which matches our hypothesis. Surprisingly, Midnight Sun shows more fear than Twilight, likely because of Edward's fear of causing harm to others or having Bella become injured. There is also less joy and surprise shown in Midnight Sun than in Twilight.
+
+Discussion piece: Although we've identified that there is a difference in the percentage of sentences containing various emotions throughout the Twilight saga and Midnight Sun, more work would need to be done to determine if the difference is statistically significant. Comparing the average proportions of emotions in other novel series would also be useful to determine if the proportions showcased in Stephanie Meyer's work is typical or unusual.
+
+## BEGINNING OF TREATING CHARACTERS AS CORPORA 
+#Bella, Jacob, and Edward corpuses
+
+```{r}
+#keyness table comparing edward as target and bella as reference
+# Then jacob as target, bella as reference, then edward as ref
+files_list_bella <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Bella", all.files = T, full.names = T, pattern = "*.txt") 
+files_list_ed <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Edward", all.files = T, full.names = T, pattern = "*.txt") 
+files_list_jb <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Jacob", all.files = T, full.names = T, pattern = "*.txt")
+
+sp_bella <- files_list_bella %>%
+  readtext::readtext()
+sp_bella <-   sp_bella %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE, remove_punct = TRUE)
+
+sp_ed <- files_list_ed %>%
+  readtext::readtext()
+sp_ed <-   sp_ed %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="word", remove_numbers=TRUE, remove_punct = TRUE, remove_symbols = TRUE)
+
+sp_jb <- files_list_jb %>%
+  readtext::readtext()
+sp_jb <-   sp_jb %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE, remove_punct = TRUE)
+
+knitr::kable(summary(sp_bella), caption = "Summary of Bella corpus.")
+knitr::kable(summary(sp_ed), caption = "Summary of Edward corpus.")
+knitr::kable(summary(sp_jb), caption = "Summary of Jacob corpus.")
+
+
+dfm_bella <- dfm(sp_bella)
+dfm_ed <- dfm(sp_ed)
+dfm_jb <- dfm(sp_jb)
+```
+
+Initially I was worried about creating a corpus from the twilight series since there are parts written from Jacob's perspective (Breaking Dawn Part II and the Eclipse Epilogue), but this accounts for roughly 9.7% of the series, and therefore should not impact overall results very much. Regardless, the keyness study will be done using the character corpora objects instead of the novel objects in order to determine character speech differences. 
+
+```{r}
+#Need two dfm objects to compare
+
+#target dfm is jacob, reference is bella
+char_kw <- keyness_table(dfm_ed, dfm_bella)
+
+kableExtra::kbl(head(char_kw, n = 30), caption = "Tokens with the highest keyness values in Edward's dfm when compared to Bella's", booktabs = T, linesep = "", digits = 2) %>%
+  kableExtra::kable_styling(latex_options = "HOLD_position") %>%
+  kableExtra::kable_classic()
+```
+
+```{r}
+#target dfm is edward, reference is bella
+char_kw <- keyness_table(dfm_ed, dfm_bella)
+
+kableExtra::kbl(head(char_kw, n = 30), caption = "Tokens with the highest keyness values in Edward's dfm when compared to Bella's", booktabs = T, linesep = "", digits = 2) %>%
+  kableExtra::kable_styling(latex_options = "HOLD_position") %>%
+  kableExtra::kable_classic()
+```
+
+```{r}
+#target dfm is jacob, reference is Edward
+char_kw <- keyness_table(dfm_jb, dfm_ed)
+
+kableExtra::kbl(head(char_kw, n = 30), caption = "Tokens with the highest keyness values in Jacob's dfm when compared to Edward's", booktabs = T, linesep = "", digits = 2) %>%
+  kableExtra::kable_styling(latex_options = "HOLD_position") %>%
+  kableExtra::kable_classic()
+```
+
+```{r}
+knitr::kable(head(textstat_frequency(dfm_ed), n = 20), caption = "Token counts of Bella dialogue.", "simple")
+```
+
+## MORE DISCUSSION
+The highest keyness value words are "her" for both Edward and Jacob's text. This is likely because Bella deals with male love interests and many male characters in a higher frequency than the female characters, and therefore is not discussing one specific female in the same way that Jacob and Edward would be discussing her. 
+
+```{r}
+b <- collocates_by_MI(sp_ed, "her", left = 3, right = 0)
+b <- b %>% filter(col_freq >= 15 & MI_1 >= 3)
+
+g  <- collocates_by_MI(sp_bella, "him", left = 3, right = 0)
+g <- g %>% filter(col_freq >= 15 & MI_1 >= 3)
+```
+
+```{r,  message = FALSE, fig.width = 7, fig.height=4}
+library(ggraph)
+net <- col_network(b, g)
+
+ggraph(net, weight = link_weight, layout = "stress") + 
+  geom_edge_link(color = "gray80", alpha = .75) + 
+  geom_node_point(aes(alpha = node_weight, size = 3, color = n_intersects)) +
+  geom_node_text(aes(label = label), repel = T, size = 3) +
+  scale_alpha(range = c(0.2, 0.9)) +
+  theme_graph() +
+  theme(legend.position="none")
+```
+
+This is a collocate graph of "him" and "her" in the Twilight series (Bella's perspective only) and in Midnight Sun and other Edward work. Bella's words revolve around sight and hearing, and Edward's words are focused on touch and holding, feeling.
+
+
+```{r}
+#NOT THE USEFUL GRAPH... USE OTHER ONE!
+b <- collocates_by_MI(sp_bella, "wolf", left = 3, right = 0)
+b <- b %>% filter(col_freq >= 3 & MI_1 >= 3)
+
+g  <- collocates_by_MI(sp_jb, "wolf", left = 3, right = 0)
+g <- g %>% filter(col_freq >= 1 & MI_1 >= 3)
+```
+
+```{r,  message = FALSE, fig.width = 7, fig.height=4}
+library(ggraph)
+net <- col_network(b, g)
+
+ggraph(net, weight = link_weight, layout = "stress") + 
+  geom_edge_link(color = "gray80", alpha = .75) + 
+  geom_node_point(aes(alpha = node_weight, size = 3, color = n_intersects)) +
+  geom_node_text(aes(label = label), repel = T, size = 3) +
+  scale_alpha(range = c(0.2, 0.9)) +
+  theme_graph() +
+  theme(legend.position="none")
+```
+
+# KEYNESS COMPARISON TO HARRY POTTER
+
+```{r}
+files_list_hp <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/HarryPotter", all.files = T, full.names = T, pattern = "*.txt")
+
+files_list_dv <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Divergent", all.files = T, full.names = T, pattern = "*.txt")
+
+files_list_bella <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Bella", all.files = T, full.names = T, pattern = "*.txt") 
+
+sp_hp <- files_list_hp %>%
+  readtext::readtext()
+
+sp_hp <-   sp_hp %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE)
+
+knitr::kable(summary(sp_hp), caption = "Summary of Harry Potter corpus.")
+dfm_hp <- dfm(sp_hp)
+
+
+sp_dv <- files_list_dv %>%
+  readtext::readtext()
+sp_dv <-   sp_dv %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE)
+knitr::kable(summary(sp_dv), caption = "Summary of Divergent corpus.")
+dfm_dv <- dfm(sp_dv)
+
+
+sp_bella <- files_list_bella %>%
+  readtext::readtext()
+sp_bella <-   sp_bella %>%
+  mutate(text = preprocess_text(text)) %>%
+  corpus() %>%
+  tokens(what="fastestword", remove_numbers=TRUE, remove_punct = TRUE)
+```
+
+
+
+```{r}
+dfm_twilight <- dfm(sp)
+dfm_ms <- dfm(sp_ms)
+dfm_ed <- dfm(sp_ed)
+dfm_jb <- dfm(sp_jb)
+dfm_bella <- dfm(sp_bella)
+
+#target dfm is jacob, reference is Harry Potter
+char_kw <- keyness_table(dfm_ed, dfm_bella)
+
+kableExtra::kbl(head(char_kw, n = 30), caption = "Tokens with the highest keyness values in Jacob's dfm when compared to Harry Potter", booktabs = T, linesep = "", digits = 2) %>%
+  kableExtra::kable_styling(latex_options = "HOLD_position") %>%
+  kableExtra::kable_classic()
+```
+

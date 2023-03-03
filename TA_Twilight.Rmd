@@ -1,5 +1,5 @@
 ---
-title: "Code Appendix"
+title: "Twilight Series Analysis"
 author: "Karissa Dautenhahn"
 date: "2022-12-12"
 output:
@@ -30,16 +30,16 @@ library(ggplot2)
 
 ```{r}
 # Twilight Series files
-files_list <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight", all.files = T, full.names = T, pattern = "*.txt") 
+files_list <- list.files("~/Documents/Twilight", all.files = T, full.names = T, pattern = "*.txt") 
 
 # Midnight Sun book
-files_list_ms <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/MidnightSun", all.files = T, full.names = T, pattern = "*.txt")
+files_list_ms <- list.files("~/Documents/MidnightSun", all.files = T, full.names = T, pattern = "*.txt")
 
 # All Edward text
-files_list_ed <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Edward", all.files = T, full.names = T, pattern = "*.txt") 
+files_list_ed <- list.files("~/Documents/Edward", all.files = T, full.names = T, pattern = "*.txt") 
 
 # All Bella text
-files_list_bella <- list.files("C:/Users/kdaut/OneDrive/Documents/Stat668/Bella", all.files = T, full.names = T, pattern = "*.txt") 
+files_list_bella <- list.files("~/Documents/Bella", all.files = T, full.names = T, pattern = "*.txt") 
 
 
 # Creating corpus object for Twilight Saga
@@ -97,7 +97,7 @@ dfm_ed <- dfm(sp_ed)
 dfm_bella <- dfm(sp_bella)
 ```
 
-This chart is not included in the paper discussion, but showcases the top 10 most frequent words in the Twilight Series as well as Midnight Sun. One interesting note is that "her" is the 4th most frequent word in Midnight Sun while "he" is the 6th most frequent word in the Twilight Series.
+This chart showcases the top 10 most frequent words in the Twilight Series as well as Midnight Sun. One interesting note is that "her" is the 4th most frequent word in Midnight Sun while "he" is the 6th most frequent word in the Twilight Series.
 
 ```{r}
 freq_df <- textstat_frequency(dfm_twilight) %>%
@@ -112,7 +112,7 @@ knitr::kable(head(freq_df_ms[1:3], 10), caption = "Most frequent words in Midnig
 
 # Keyness comparison
 
-This code chunk creates a keyness table from the Edward and Bella dfm objects. The columns for Deviation of Proportions (DP) for both the target and reference corpora are ignored since they are not used in the study. The PV column shows highly significant p-values for all of the top 5 tokens. The top two results are discussed in the paper, but the top 5 are shown here. The remaining 3 tokens have high LL values likely due to tokenizing differences between the two corpora and should not be regarded as significantly.
+This code chunk creates a keyness table from the Edward and Bella dfm objects. The columns for Deviation of Proportions (DP) for both the target and reference corpora are ignored since they are not used in the study. The PV column shows highly significant p-values for all of the top 5 tokens. The 5 results are shown here although the top 2 are our main interest. The remaining 3 tokens have high LL values likely due to tokenizing differences between the two corpora and should not be regarded as significantly.
 
 ```{r}
 # Target DFM is Edward, reference is Bella
@@ -161,7 +161,7 @@ ggraph(net, weight = link_weight, layout = "stress") +
 This section involves using the syuzhet package (from library(syuzhet)) to analyze the sentiment of each novel.
 
 ```{r warning = FALSE, message = FALSE}
-midnight_sun_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/MidnightSun/MidnightSun.txt" %>% 
+midnight_sun_tokens <- "~/Documents/MidnightSun/MidnightSun.txt" %>% 
   readtext()
 mb_mid_sun <- str_squish(midnight_sun_tokens$text[1])
 # chunk the novel into sentences
@@ -169,7 +169,7 @@ mb_sentences <- get_sentences(mb_mid_sun)
 nrc_data_mid_sun <- get_nrc_sentiment(mb_sentences)
 
 
-twilight_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_Twilight.txt" %>%
+twilight_tokens <- "~/Documents/Twilight/Meyer_Twilight.txt" %>%
   readtext() 
 mb_twilight <- str_squish(twilight_tokens$text[1])
 # chunk the novel into sentences
@@ -177,7 +177,7 @@ mb_sentences_t <- get_sentences(mb_twilight)
 nrc_data_twilight <- get_nrc_sentiment(mb_sentences_t)
 
 
-new_moon_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_NewMoon.txt" %>%
+new_moon_tokens <- "~/Documents/Twilight/Meyer_NewMoon.txt" %>%
   readtext() 
 mb_new_moon <- str_squish(new_moon_tokens$text[1])
 # chunk the novel into sentences
@@ -185,7 +185,7 @@ mb_sentences_nm <- get_sentences(mb_new_moon)
 nrc_data_new_moon <- get_nrc_sentiment(mb_sentences_nm)
 
 
-eclipse_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_Eclipse.txt" %>%
+eclipse_tokens <- "~/Documents/Twilight/Meyer_Eclipse.txt" %>%
   readtext() 
 mb_eclipse <- str_squish(eclipse_tokens$text[1])
 # chunk the novel into sentences
@@ -193,7 +193,7 @@ mb_sentences_ec <- get_sentences(mb_eclipse)
 nrc_data_eclipse <- get_nrc_sentiment(mb_sentences_ec)
 
 
-breaking_dawn_tokens <- "C:/Users/kdaut/OneDrive/Documents/Stat668/Twilight/Meyer_BreakingDawn.txt" %>%
+breaking_dawn_tokens <- "~/Documents/Twilight/Meyer_BreakingDawn.txt" %>%
   readtext() 
 mb_breaking_dawn <- str_squish(breaking_dawn_tokens$text[1])
 # chunk the novel into sentences
